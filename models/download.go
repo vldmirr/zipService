@@ -11,7 +11,7 @@ import (
 )
 
 type DownloadRequest struct {
-	Url         string // eg: https://cdn.videvo.net/videvo_files/video/premium/video0042/large_watermarked/900-2_900-6334-PD2_preview.mp4
+	Url         string 
 	FileName    string
 	Chunks      int
 	Chunksize   int

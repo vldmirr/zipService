@@ -47,8 +47,6 @@
 
 ### 4. Дополнительный функционал:
 - [ ] Конфигурация через config-файл (порт, лимиты, разрешенные типы)
-- [ ] Прометеус-метрики для мониторинга
-- [ ] Graceful shutdown сервера
 
 ### 5. Оптимизации:
 - [ ] Ограничение скорости загрузки
@@ -81,7 +79,7 @@ curl -X POST http://localhost:8080/task/create
 ```bash
 curl -X POST \
   -H "Content-Type: application/json" \
-  -d '{"link":"http://example.com/file1.zip"}' \
+  -d '{"link":"https://zhjwpku.com/assets/pdf/AnIntroductionToProgrammingInGo.pdf"}' \
   "http://localhost:8080/links/add?task=a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
 ```
 Повторите для нескольких ссылок.

@@ -100,12 +100,7 @@ curl "http://localhost:8080/task/status?task=a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n
 curl -o result.zip \
   "http://localhost:8080/task/download-archive?task=a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
 ```
-Или с кастомным именем архива:
 
-```bash
-curl -o custom_name.zip \
-  "http://localhost:8080/task/download-archive?task=a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8&filename=custom_name"
-```
 ## Архитектурные особенности
 ### Паттерны:
 Используется Worker Pool для параллельных загрузок

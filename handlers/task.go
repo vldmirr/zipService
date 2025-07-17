@@ -2,16 +2,24 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/vldmir/zip-service/service"
 	"net/http"
+	"path/filepath"
+	"strings"
+
+	"github.com/vldmir/zip-service/config"
+	"github.com/vldmir/zip-service/service"
 )
 
 type LinkServiceHandler struct {
 	service *service.LinkService
+	config  *config.Config
 }
 
-func NewLinkServiceHandler(s *service.LinkService) *LinkServiceHandler {
-	return &LinkServiceHandler{service: s}
+func NewLinkServiceHandler(s *service.LinkService,cfg *config.Config) *LinkServiceHandler {
+	return &LinkServiceHandler{
+		service: s,
+		config:  cfg,
+	}
 }
 
 // CreateTaskHandler создает новую задачу
@@ -21,11 +29,16 @@ func (h *LinkServiceHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Проверка лимита задач
+	if h.service.ActiveTasksCount() >= h.config.Limits.MaxConcurrentTasks {
+		http.Error(w, "Server busy: too many active tasks", http.StatusTooManyRequests)
+		return
+	}
+
 	taskID := h.service.CreateTask()
 	json.NewEncoder(w).Encode(map[string]string{"task_id": taskID})
 }
 
-// AddLinkHandler добавляет ссылку в задачу
 func (h *LinkServiceHandler) AddLinkHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -38,18 +51,43 @@ func (h *LinkServiceHandler) AddLinkHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	link := r.URL.Query().Get("link")
-	if link == "" {
-		http.Error(w, "Link is required", http.StatusBadRequest)
+	var data struct {
+		Link string `json:"link"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := h.service.AddLink(taskID, link); err != nil {
+	// Проверка типа файла
+	fileType := strings.ToLower(filepath.Ext(data.Link))
+	allowed := false
+	for _, t := range h.config.AllowedTypes {
+		if fileType == t {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		http.Error(w, "File type not allowed", http.StatusBadRequest)
+		return
+	}
+
+	// Проверка лимита файлов в задаче
+	if count, err := h.service.GetTaskStatus(taskID); err == nil {
+		if count >= h.config.Limits.MaxFilesPerTask {
+			http.Error(w, "Task file limit reached", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if err := h.service.AddLink(taskID, data.Link); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
 
 // GetLinksHandler возвращает ссылки задачи

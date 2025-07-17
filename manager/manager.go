@@ -12,14 +12,6 @@ import (
 	"github.com/vldmir/zip-service/models"
 )
 
-func Init() {
-	fmt.Println(util.InitMotd)
-}
-
-func End() {
-	fmt.Println(util.EndMotd)
-}
-
 func Run(urls []*url.URL, downloadDir string) {
 	// Инициализация HTTP клиента один раз для всех загрузок
 	client := service.NewHTTPClient()

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 	"time"
-
+	"github.com/vldmir/zip-service/config"
 	"github.com/vldmir/zip-service/handlers"
 )
 
@@ -36,30 +36,50 @@ func printRoutes() {
 	fmt.Println("----------------------------------------")
 }
 
-func printServerInfo() {
+func printServerInfo(port string) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "localhost"
 	}
 	fmt.Printf("Server running on:\n")
-	fmt.Printf("• Local: http://localhost:8080\n")
-	fmt.Printf("• Network: http://%s:8080\n", hostname)
+	fmt.Printf("• Local: http://localhost:%s\n",port)
+	fmt.Printf("• Network: http://%s:\n", hostname)
 	fmt.Println("----------------------------------------")
 	fmt.Println("Press Ctrl+C to stop the server")
 }
 
 func main() {
+		// Загрузка конфигурации
+	cfg, err := config.Load("config.yaml")
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Инициализация обработчиков с конфигом
+	handlers.InitHandlers(cfg)
+
+	// Настройка сервера с таймаутами
+	srv := &http.Server{
+		Addr:         cfg.Server.Port,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+	}
+
 	printWelcomeMessage()
 	printRoutes()
-	printServerInfo()
+	printServerInfo(cfg.Server.Port)
 
 	http.HandleFunc("/task/create", handlers.CreateTaskHandler)
 	http.HandleFunc("/links/add", handlers.AddLinkHandler)
 	http.HandleFunc("/task/download-archive", handlers.DownloadAndArchiveHandler)
 	http.HandleFunc("/task/status", handlers.GetTaskStatusHandler)
 
-	log.Println("Starting server on port 8080...")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	log.Printf("Starting server on %s with configuration:\n", cfg.Server.Port)
+	log.Printf("- Max concurrent tasks: %d\n", cfg.Limits.MaxConcurrentTasks)
+	log.Printf("- Max files per task: %d\n", cfg.Limits.MaxFilesPerTask)
+	log.Printf("- Allowed file types: %v\n", cfg.AllowedTypes)
+
+	if err := srv.ListenAndServe(); err != nil {
+		log.Fatalf("Server failed: %v", err)
 	}
 }

@@ -12,11 +12,19 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
+	"github.com/vldmir/zip-service/config"
 	"github.com/vldmir/zip-service/service"
 )
 
-var storage = service.New()
+var (
+	storage *service.LinkService
+	cfg     *config.Config
+)
+
+func InitHandlers(config *config.Config) {
+	cfg = config
+	storage = service.New(config) // Инициализируем storage с конфигом
+}
 
 type TaskResponse struct {
 	TaskID string `json:"task_id"`
@@ -94,9 +102,6 @@ func DownloadAndArchiveHandler(w http.ResponseWriter, r *http.Request) {
 		links = append(links, u)
 	}
 
-	// Инициализация менеджера
-	manager.Init()
-	defer manager.End()
 
 	// Указываем директорию для загрузки
 	downloadDir := "./downloads"

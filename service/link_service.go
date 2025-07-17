@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"sync"
+	"github.com/vldmir/zip-service/config"
 )
 
 type Task struct {
@@ -14,11 +15,13 @@ type Task struct {
 type LinkService struct {
 	tasks map[string]*Task
 	mu    sync.RWMutex
+	cfg   *config.Config
 }
 
-func New() *LinkService {
+func New(cfg *config.Config) *LinkService {
 	return &LinkService{
 		tasks: make(map[string]*Task),
+		cfg:   cfg,
 	}
 }
 
@@ -86,4 +89,10 @@ func (ls *LinkService) GetTaskStatus(taskID string) (int, error) {
 	}
 
 	return len(task.Links), nil
+}
+
+func (ls *LinkService) ActiveTasksCount() int {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
+	return len(ls.tasks)
 }

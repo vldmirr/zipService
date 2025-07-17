@@ -1,0 +1,14 @@
+server:
+  port: ":8080"
+  read_timeout: 3s
+  write_timeout: 3s
+
+limits:
+  max_concurrent_tasks: 3
+  max_files_per_task: 3
+  # max_file_size_mb: 10
+
+allowed_types:
+  - ".pdf"
+  - ".jpg"
+  - ".jpeg"

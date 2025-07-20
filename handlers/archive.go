@@ -36,6 +36,12 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	
+	if storage.ActiveTasksCount() >= cfg.Limits.MaxConcurrentTasks {
+		http.Error(w, "Server busy: too many active tasks", http.StatusTooManyRequests)
+		return
+	}
+
 
 	taskID := storage.CreateTask()
 	json.NewEncoder(w).Encode(TaskResponse{TaskID: taskID})

@@ -22,22 +22,6 @@ func NewLinkServiceHandler(s *service.LinkService,cfg *config.Config) *LinkServi
 	}
 }
 
-// CreateTaskHandler создает новую задачу
-func (h *LinkServiceHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Проверка лимита задач
-	if h.service.ActiveTasksCount() >= h.config.Limits.MaxConcurrentTasks {
-		http.Error(w, "Server busy: too many active tasks", http.StatusTooManyRequests)
-		return
-	}
-
-	taskID := h.service.CreateTask()
-	json.NewEncoder(w).Encode(map[string]string{"task_id": taskID})
-}
 
 func (h *LinkServiceHandler) AddLinkHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {

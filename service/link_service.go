@@ -2,14 +2,17 @@ package service
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"sync"
+
+	"github.com/google/uuid"
 	"github.com/vldmir/zip-service/config"
+	"strings"
 )
 
 type Task struct {
 	ID    string
 	Links []string
+	Status string
 }
 
 type LinkService struct {
@@ -34,8 +37,19 @@ func (ls *LinkService) CreateTask() string {
 	ls.tasks[taskID] = &Task{
 		ID:    taskID,
 		Links: make([]string, 0),
+		Status: "processing",
 	}
 	return taskID
+}
+
+func isValidFileType(url string) bool {
+    allowedExtensions := []string{".pdf", ".jpeg", ".jpg"}
+    for _, ext := range allowedExtensions {
+        if strings.HasSuffix(strings.ToLower(url), ext) {
+            return true
+        }
+    }
+    return false
 }
 
 // AddLink добавляет ссылку в указанную задачу
@@ -47,6 +61,17 @@ func (ls *LinkService) AddLink(taskID, link string) error {
 	if !exists {
 		return fmt.Errorf("task with ID %s not found", taskID)
 	}
+
+	    // Проверка лимита файлов
+    if len(task.Links) >= ls.cfg.Limits.MaxFilesPerTask {
+        return fmt.Errorf("maximum files per task reached")
+    }
+
+	    // Проверка типа файла
+    if !isValidFileType(link) {
+        return fmt.Errorf("invalid file type, only .pdf and .jpeg allowed")
+    }
+    
 
 	task.Links = append(task.Links, link)
 	return nil
@@ -85,13 +110,26 @@ func (ls *LinkService) GetTaskStatus(taskID string) (int, error) {
 
 	task, exists := ls.tasks[taskID]
 	if !exists {
-		return 0, fmt.Errorf("task with ID %s not found", taskID)
+		return 0,fmt.Errorf("task with ID %s not found", taskID)
 	}
 
 	return len(task.Links), nil
 }
 
 func (ls *LinkService) ActiveTasksCount() int {
+	    ls.mu.RLock()
+    defer ls.mu.RUnlock()
+    
+    count := 0
+    for _, task := range ls.tasks {
+        if task.Status == "processing" {
+            count++
+        }
+    }
+    return count
+}
+
+func (ls *LinkService) AllTasksCount() int {
 	ls.mu.RLock()
 	defer ls.mu.RUnlock()
 	return len(ls.tasks)
